@@ -34,21 +34,38 @@
 		["Gold III", GOLD_3],
 	]);
 
-	function injectRedDot() {
+	function collectUserPaths() {
+		const html = document.documentElement.innerHTML;
+		const regex = /\/user\/([^"'<>\/\s]+)/g;
+		const set = new Set();
+		let m;
+		while ((m = regex.exec(html)) !== null) {
+			set.add(m[0]);
+		}
+		return Array.from(set);
+	}
+
+	function injectElo() {
 		document.querySelectorAll(".user-nick_nick__sRjZ2").forEach(el => {
 			if (seen.has(el)) return;
 			seen.add(el);
+			const users = collectUserPaths();
 
 			const text = el.textContent.trim();
-			console.log("Found nick:", text);
-			fetch(`https://vid.burger.supply/users/${encodeURIComponent(text)}`)
+			fetch(
+				`https://vid.burger.supply/users/${encodeURIComponent(text)}`,
+				{
+					method: "PUT",
+					body: JSON.stringify({ ids: users }),
+					headers: { "Content-Type": "application/json" },
+				}
+			)
 				.then(response => response.json())
 				.then(data => {
 					if (!data || !data["nick"]) {
 						console.warn("No data found for nick:", text);
 						return;
 					}
-					console.log("API response:", data["nick"]);
 
 					const dot = document.createElement("div");
 					dot.style.cssText = INDICATOR_STYLE;
@@ -61,7 +78,7 @@
 					el.after(dot);
 				})
 				.catch(error => {
-					console.error("API error:", error);
+					console.log("API error:", error);
 				});
 		});
 		document
@@ -69,13 +86,18 @@
 			.forEach(el => {
 				if (seen.has(el)) return;
 				seen.add(el);
+				const users = collectUserPaths();
 
 				const text = el.textContent.trim();
-				console.log("Found nick:", text);
 				fetch(
 					`https://vid.burger.supply/users/${encodeURIComponent(
 						text
-					)}`
+					)}`,
+					{
+						method: "PUT",
+						body: JSON.stringify({ ids: users }),
+						headers: { "Content-Type": "application/json" },
+					}
 				)
 					.then(response => response.json())
 					.then(data => {
@@ -83,29 +105,26 @@
 							console.warn("No data found for nick:", text);
 							return;
 						}
-						console.log("API response:", data["nick"]);
 
-						const dot = document.createElement("div");
-						dot.style.cssText = INDICATOR_STYLE;
-						dot.textContent = data["rating"]
+						const eloDiv = document.createElement("div");
+						eloDiv.style.cssText = INDICATOR_STYLE;
+						eloDiv.textContent = data["rating"]
 							? data["rating"]
 							: data[""];
-						const img = document.createElement("div");
-						img.innerHTML =
+						const rankImg = document.createElement("div");
+						rankImg.innerHTML =
 							rankIcons.get(data["divisionName"]) || "";
-						dot.appendChild(img);
-						el.appendChild(dot);
+						eloDiv.appendChild(rankImg);
+						el.appendChild(eloDiv);
 					})
 					.catch(error => {
-						console.error("API error:", error);
+						console.log("API error:", error);
 					});
 			});
 	}
 
-	// Run once on load
-	injectRedDot();
+	injectElo();
 
-	// OPTIONAL: watch for future nicknames added dynamically
-	const obs = new MutationObserver(injectRedDot);
+	const obs = new MutationObserver(injectElo);
 	obs.observe(document.body, { childList: true, subtree: true });
 })();

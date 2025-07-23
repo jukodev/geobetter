@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "GeoBetter",
-	"version": "1.0",
+	"version": "1.0.2",
 	"description": "Shows solo ranks and stats everywhere on GeoGuessr",
 	"icons": {
 		"48": "icons/icon.png",
